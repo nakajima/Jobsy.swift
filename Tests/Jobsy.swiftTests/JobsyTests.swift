@@ -44,10 +44,10 @@ struct TestJob: Job {
 }
 
 final class Jobsy_swiftTests: XCTestCase {
-	let scheduler = JobScheduler(redis: .dev, kinds: [TestJob.self])
+	let scheduler = JobScheduler(redis: .dev(), kinds: [TestJob.self])
 
 	func reset() async throws {
-		let redis: RedisConnection = .dev
+		let redis: RedisConnection = .dev()
 
 		let keys = try await redis.send(command: "KEYS", with: ["jobsy:*".convertedToRESPValue()]).get().array ?? []
 		_ = try await redis.delete(keys.compactMap({ $0.string }).map { RedisKey($0) }).get()
@@ -56,7 +56,7 @@ final class Jobsy_swiftTests: XCTestCase {
 	}
 
 	func testCanConnect() throws {
-		let redis = Redis(connection: .dev)
+		let redis = Redis(connection: .dev())
 		XCTAssert(redis.isConnected, "could not connect, is the local server running?")
 	}
 
@@ -158,5 +158,33 @@ final class Jobsy_swiftTests: XCTestCase {
 		let errored = try await scheduler.errored()
 
 		XCTAssertEqual([job.id], errored.map(\.jobID))
+	}
+
+	func testRunner() async throws {
+		try await reset()
+
+		let job = TestJob(id: "job", parameters: .init())
+		let scheduledJob = TestJob(id: "scheduled", parameters: .init())
+
+		try await scheduler.push(job)
+		try await scheduler.push(scheduledJob, performAt: Date().addingTimeInterval(2))
+
+		let runner = Runner(scheduler: scheduler, pollInterval: 1)
+		
+		Task {
+			try await runner.run()
+		}
+
+		for _ in 0..<4 {
+			try? await Task.sleep(for: .seconds(1))
+
+			let newCount = await TestThing.instance.count
+			if newCount == 2 {
+				XCTAssert(true)
+				return
+			}
+		}
+
+		XCTFail("did not get to 2")
 	}
 }

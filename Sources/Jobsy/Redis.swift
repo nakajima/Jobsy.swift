@@ -9,14 +9,14 @@
 import NIOCore
 
 public extension RedisConnection {
-	static let dev: RedisConnection = {
+	static func dev() -> RedisConnection {
 		let eventLoop: EventLoop = NIOSingletons.posixEventLoopGroup.any()
 
 		return try! RedisConnection.make(
 			configuration: .init(hostname: "127.0.0.1"),
 			boundEventLoop: eventLoop
 		).wait()
-	}()
+	}
 }
 
 public final class Redis {

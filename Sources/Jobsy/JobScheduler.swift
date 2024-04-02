@@ -102,7 +102,6 @@ public actor JobScheduler {
 	// Moves scheduled jobs to the main queue. If a job has repeats, it schedules a new one after that job's interval.
 	public func schedule(now: Date? = nil) async throws {
 		let now = now ?? Date()
-
 		let jobIDsToSchedule = try await redis.zrangebyscore(from: keys.scheduled, withScores: 0...now.timeIntervalSince1970).get().compactMap(\.string)
 
 		if jobIDsToSchedule.isEmpty {
@@ -136,12 +135,25 @@ public actor JobScheduler {
 		}
 	}
 
+	// Block till a job comes in. This takes a separate redis connection because otherwise no other
+	// redis operations will work.
+	public func bpop(connection: RedisConnection) async throws -> (any Job)? {
+		guard let nextJobID = try await connection.brpop(from: keys.jobs, as: String.self).get() else {
+			return nil
+		}
+
+		return try await poppedJob(id: nextJobID)
+	}
+
 	public func pop() async throws -> (any Job)? {
-		// TODO: move to a different working queue?
 		guard let nextJobID = try await redis.rpop(from: keys.jobs, as: String.self).get() else {
 			return nil
 		}
 
+		return try await poppedJob(id: nextJobID)
+	}
+
+	func poppedJob(id nextJobID: String) async throws -> (any Job)? {
 		guard let serializedJobData = try await redis.get(keys.job(nextJobID), as: Data.self).get() else {
 			return nil
 		}
@@ -156,6 +168,7 @@ public actor JobScheduler {
 			throw Error.invalidJobKind
 		}
 
+		// TODO: move to a different working queue?
 		return try serializedJob.decode(kind, with: decoder)
 	}
 
