@@ -1,7 +1,6 @@
 import Jobsy
 import XCTest
 import Foundation
-import pat_swift
 @preconcurrency import RediStack
 
 actor TestThing {
@@ -39,6 +38,17 @@ struct TestJob: Job {
 			throw Error.testError
 		} else {
 			await TestThing.instance.increment()
+		}
+	}
+}
+
+public extension XCTestCase {
+	func XCTUnwrapAsync<T: Sendable>(_ expression: @autoclosure () async throws -> T?, _ message: @autoclosure () -> String = "", file: StaticString = #filePath, line: UInt = #line) async throws -> T {
+
+		let result = try await expression()
+
+		return try await MainActor.run {
+			return try XCTUnwrap(result)
 		}
 	}
 }

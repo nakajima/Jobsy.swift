@@ -15,7 +15,6 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/swift-server/RediStack.git", from: "1.6.2"),
-		.package(url: "https://github.com/nakajima/pat.swift.git", branch: "main"),
 	],
 	targets: [
 		// Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -31,7 +30,7 @@ let package = Package(
 		),
 		.testTarget(
 			name: "Jobsy.swiftTests",
-			dependencies: ["Jobsy", "pat.swift"],
+			dependencies: ["Jobsy"],
 			swiftSettings: [
 				.enableExperimentalFeature("StrictConcurrency")
 			]

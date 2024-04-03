@@ -1,15 +1,6 @@
 {
-  "originHash" : "917c97242efa1b5b2dc5581d513f6c646997ccc0e6cc2eeb770666efe885de53",
+  "originHash" : "d1f422a01e0b80473064a2a157f4335102218e3a82f2f8c9ee168df8bdc02a8b",
   "pins" : [
-    {
-      "identity" : "pat.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/nakajima/pat.swift.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "d63ed26ee66af0cad0b9e69abf9a8c440185161d"
-      }
-    },
     {
       "identity" : "redistack",
       "kind" : "remoteSourceControl",
