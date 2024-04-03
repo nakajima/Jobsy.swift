@@ -163,7 +163,7 @@ final class Jobsy_swiftTests: XCTestCase {
 
 		let job = TestJob(id: "errored", parameters: .init(shouldError: true))
 
-		try await scheduler.perform(job)
+		await scheduler.perform(job)
 
 		let errored = try await scheduler.errored()
 
@@ -212,7 +212,7 @@ final class Jobsy_swiftTests: XCTestCase {
 		let runner = Runner(pollInterval: 1)
 		
 		Task {
-			try await runner.run(connection: .dev(), for: [TestJob.self])
+			await runner.run(connection: .dev(), for: [TestJob.self])
 		}
 
 		for _ in 0..<4 {
