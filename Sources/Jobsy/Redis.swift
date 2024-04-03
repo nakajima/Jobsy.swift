@@ -36,7 +36,7 @@ public extension RedisConnection {
 				boundEventLoop: eventLoop
 			).wait()
 		} catch {
-			fatalError("error connecting to redis url: \(error)")
+			fatalError("error connecting to redis url (\(url)): \(error)")
 		}
 	}
 }
