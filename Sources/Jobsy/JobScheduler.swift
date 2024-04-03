@@ -16,8 +16,8 @@ public actor JobScheduler {
 	let encoder = JSONEncoder()
 	let decoder = JSONDecoder()
 
-	nonisolated static let onceRemaining = -2
-	nonisolated static let foreverRemaining = -1
+	nonisolated public static let onceRemaining = -2
+	nonisolated public static let foreverRemaining = -1
 
 	enum Error: Swift.Error {
 		case invalidJobKind, noIntervalFound
