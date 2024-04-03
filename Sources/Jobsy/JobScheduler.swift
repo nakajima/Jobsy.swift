@@ -16,8 +16,8 @@ public actor JobScheduler {
 	let encoder = JSONEncoder()
 	let decoder = JSONDecoder()
 
-	let onceRemaining = -2
-	let foreverRemaining = -1
+	nonisolated static let onceRemaining = -2
+	nonisolated static let foreverRemaining = -1
 
 	enum Error: Swift.Error {
 		case invalidJobKind, noIntervalFound
@@ -75,7 +75,7 @@ public actor JobScheduler {
 	public func push(
 		_ job: some Job,
 		performAt: Date? = nil,
-		frequency: JobFrequency? = nil
+		frequency: JobFrequency = .once
 	) async throws {
 		let serializedJob = try SerializedJob(
 			id: job.id,
@@ -99,11 +99,10 @@ public actor JobScheduler {
 				_ = redis.set(keys.remaining(job.id), to: count)
 				_ = redis.set(keys.interval(job.id), to: duration.components.seconds)
 			case .forever(let duration):
-				_ = redis.set(keys.remaining(job.id), to: -1)
+				_ = redis.set(keys.remaining(job.id), to: JobScheduler.foreverRemaining)
 				_ = redis.set(keys.interval(job.id), to: duration.components.seconds)
-			default:
-				_ = redis.set(keys.remaining(job.id), to: -2)
-				_ = redis.set(keys.interval(job.id), to: -1)
+			case .once:
+				_ = redis.set(keys.remaining(job.id), to: JobScheduler.onceRemaining)
 			}
 		}
 	}
@@ -127,11 +126,15 @@ public actor JobScheduler {
 				continue
 			}
 
+			if remaining == JobScheduler.onceRemaining {
+				continue
+			}
+
 			guard let interval = try await redis.get(keys.interval(jobID), as: Int.self).get() else {
 				throw Error.noIntervalFound
 			}
 
-			if remaining == foreverRemaining {
+			if remaining == JobScheduler.foreverRemaining {
 				// This job repeats forever
 				_ = try await redis.zadd([(jobID, now.addingTimeInterval(TimeInterval(interval)).timeIntervalSince1970)], to: keys.scheduled).get()
 			} else if remaining == 0 {
@@ -145,16 +148,16 @@ public actor JobScheduler {
 	}
 
 	public func status(jobID: String) async throws -> JobStatus {
-		guard let jobExists = try await redis.get(keys.job(jobID), as: Data.self).get() else {
+		guard let _ = try await redis.get(keys.job(jobID), as: Data.self).get() else {
 			return .unknown
 		}
 
 		if let remaining = try await redis.get(keys.remaining(jobID), as: Int.self).get(),
-			 let timestamp = try await redis.zscore(of: jobID, in: keys.scheduled).get(),
-			 let interval = try await redis.get(keys.interval(jobID), as: Int.self).get() {
-			let frequency: JobFrequency = if remaining == onceRemaining {
+			 let timestamp = try await redis.zscore(of: jobID, in: keys.scheduled).get() {
+			let interval = try await redis.get(keys.interval(jobID), as: Int.self).get() ?? 0
+			let frequency: JobFrequency = if remaining == JobScheduler.onceRemaining {
 				.once
-			} else if remaining == foreverRemaining {
+			} else if remaining == JobScheduler.foreverRemaining {
 				.forever(.seconds(interval))
 			} else {
 				.times(remaining, .seconds(interval))

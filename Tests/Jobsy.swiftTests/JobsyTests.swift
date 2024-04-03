@@ -101,6 +101,10 @@ final class Jobsy_swiftTests: XCTestCase {
 
 		let foundJob = try await XCTUnwrapAsync(await scheduler.pop())
 		XCTAssertEqual(foundJob.id, scheduledJob.id)
+
+		let nojob = try await scheduler.pop()
+
+		XCTAssertNil(nojob, "popped job after there shouldnt be any left")
 	}
 
 	func testCanRepeat() async throws {
@@ -187,11 +191,12 @@ final class Jobsy_swiftTests: XCTestCase {
 		let performAt = Date().addingTimeInterval(10)
 		try await scheduler.push(scheduledJob, performAt: performAt)
 
-		if case let .scheduled(schedule) = try await scheduler.status(jobID: "scheduled") {
+		let scheduledStatus = try await scheduler.status(jobID: "scheduled")
+		if case let .scheduled(schedule) = scheduledStatus {
 			XCTAssertEqual(schedule.nextPushAt.formatted(.iso8601), performAt.formatted(.iso8601))
 			XCTAssertEqual(schedule.frequency, .once)
 		} else {
-			XCTFail("did not get scheduled")
+			XCTFail("did not get scheduled: \(scheduledStatus)")
 		}
 	}
 
