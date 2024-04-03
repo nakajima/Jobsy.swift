@@ -51,7 +51,7 @@ public actor JobScheduler {
 		}
 	}
 
-	public func perform(_ job: any Job) async throws {
+	public func perform(_ job: any Job) async {
 		do {
 			try await job.perform()
 		} catch {
@@ -61,7 +61,12 @@ public actor JobScheduler {
 				error: error.localizedDescription
 			)
 
-			_ = try await redis.lpush(encoder.encode(erroredJob), into: keys.errored).get()
+			do {
+				_ = try await redis.lpush(encoder.encode(erroredJob), into: keys.errored).get()
+			} catch {
+				print("ERROR REPORTING ERROR WOW: \(error)")
+				try? await Task.sleep(for: .seconds(1))
+			}
 		}
 	}
 

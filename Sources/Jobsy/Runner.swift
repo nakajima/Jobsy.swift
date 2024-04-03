@@ -15,7 +15,7 @@ public final class Runner: Sendable {
 		self.pollInterval = pollInterval
 	}
 
-	public func run(connection: @autoclosure () -> RedisConnection, for kinds: [any Job.Type]) async throws {
+	public func run(connection: @autoclosure () -> RedisConnection, for kinds: [any Job.Type]) async {
 		let scheduler = JobScheduler(redis: connection(), kinds: kinds)
 
 		Task {
@@ -32,8 +32,13 @@ public final class Runner: Sendable {
 		}
 
 		while true {
-			if let job = try await scheduler.bpop(connection: connection()) {
-				try await scheduler.perform(job)
+			do {
+				if let job = try await scheduler.bpop(connection: connection()) {
+					await scheduler.perform(job)
+				}
+			} catch {
+				print("ERROR POPPING JOB: \(error)")
+				try? await Task.sleep(for: .seconds(1))
 			}
 		}
 	}
