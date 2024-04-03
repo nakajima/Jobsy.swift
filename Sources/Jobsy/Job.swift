@@ -6,7 +6,7 @@
 //
 
 import Foundation
-@preconcurrency import RediStack
+import RediStack
 
 public protocol Job: Codable, Sendable {
 	associatedtype Parameters: Codable

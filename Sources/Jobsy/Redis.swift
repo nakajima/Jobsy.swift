@@ -13,10 +13,14 @@ public extension RedisConnection {
 	static func dev() -> RedisConnection {
 		let eventLoop: EventLoop = NIOSingletons.posixEventLoopGroup.any()
 
-		return try! RedisConnection.make(
-			configuration: .init(hostname: "127.0.0.1"),
-			boundEventLoop: eventLoop
-		).wait()
+		do {
+			return try RedisConnection.make(
+				configuration: .init(hostname: "127.0.0.1"),
+				boundEventLoop: eventLoop
+			).wait()
+		} catch {
+			fatalError("error connecting to dev redis: \(error)")
+		}
 	}
 
 	static func url(_ url: String) -> RedisConnection {
@@ -26,10 +30,14 @@ public extension RedisConnection {
 			fatalError("invalid redis connection URL")
 		}
 
-		return try! RedisConnection.make(
-			configuration: .init(url: url),
-			boundEventLoop: eventLoop
-		).wait()
+		do {
+			return try RedisConnection.make(
+				configuration: .init(url: url),
+				boundEventLoop: eventLoop
+			).wait()
+		} catch {
+			fatalError("error connecting to redis url: \(error)")
+		}
 	}
 }
 
