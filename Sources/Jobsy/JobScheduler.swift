@@ -135,6 +135,26 @@ public actor JobScheduler {
 		}
 	}
 
+	public func status(jobID: String) async throws -> JobStatus {
+		guard let jobExists = try await redis.get(keys.job(jobID), as: Data.self).get() else {
+			return .unknown
+		}
+
+		if let remaining = try await redis.get(keys.remaining(jobID), as: Int.self).get(),
+			 let timestamp = try await redis.zscore(of: jobID, in: keys.scheduled).get(),
+			 let interval = try await redis.get(keys.interval(jobID), as: Int.self).get() {
+			let schedule = JobStatus.Schedule(
+				nextPushAt: Date(timeIntervalSince1970: timestamp),
+				interval: TimeInterval(interval),
+				remaining: remaining == -1 ? nil : remaining
+			)
+
+			return .scheduled(schedule)
+		} else {
+			return .queued
+		}
+	}
+
 	// Block till a job comes in. This takes a separate redis connection because otherwise no other
 	// redis operations will work.
 	public func bpop(connection: RedisConnection) async throws -> (any Job)? {
