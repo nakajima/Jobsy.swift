@@ -5,8 +5,9 @@
 //  Created by Pat Nakajima on 4/1/24.
 //
 
-@preconcurrency import RediStack
+import RediStack
 import NIOCore
+import Foundation
 
 public extension RedisConnection {
 	static func dev() -> RedisConnection {
@@ -17,16 +18,18 @@ public extension RedisConnection {
 			boundEventLoop: eventLoop
 		).wait()
 	}
+
+	static func url(_ url: String) -> RedisConnection {
+		let eventLoop: EventLoop = NIOSingletons.posixEventLoopGroup.any()
+
+		guard let url = URL(string: url) else {
+			fatalError("invalid redis connection URL")
+		}
+
+		return try! RedisConnection.make(
+			configuration: .init(url: url),
+			boundEventLoop: eventLoop
+		).wait()
+	}
 }
 
-public final class Redis {
-	let connection: RedisConnection
-
-	public init(connection: RedisConnection) {
-		self.connection = connection
-	}
-
-	public var isConnected: Bool {
-		self.connection.isConnected
-	}
-}

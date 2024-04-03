@@ -16,6 +16,9 @@ public actor JobScheduler {
 	let encoder = JSONEncoder()
 	let decoder = JSONDecoder()
 
+	let onceRemaining = -2
+	let foreverRemaining = -1
+
 	enum Error: Swift.Error {
 		case invalidJobKind, noIntervalFound
 	}
@@ -94,7 +97,7 @@ public actor JobScheduler {
 				_ = redis.set(keys.remaining(job.id), to: -1)
 				_ = redis.set(keys.interval(job.id), to: duration.components.seconds)
 			default:
-				_ = redis.set(keys.remaining(job.id), to: 0)
+				_ = redis.set(keys.remaining(job.id), to: -2)
 				_ = redis.set(keys.interval(job.id), to: -1)
 			}
 		}
@@ -123,7 +126,7 @@ public actor JobScheduler {
 				throw Error.noIntervalFound
 			}
 
-			if remaining == -1 {
+			if remaining == foreverRemaining {
 				// This job repeats forever
 				_ = try await redis.zadd([(jobID, now.addingTimeInterval(TimeInterval(interval)).timeIntervalSince1970)], to: keys.scheduled).get()
 			} else if remaining == 0 {
@@ -144,9 +147,9 @@ public actor JobScheduler {
 		if let remaining = try await redis.get(keys.remaining(jobID), as: Int.self).get(),
 			 let timestamp = try await redis.zscore(of: jobID, in: keys.scheduled).get(),
 			 let interval = try await redis.get(keys.interval(jobID), as: Int.self).get() {
-			let frequency: JobFrequency = if interval == -1 {
+			let frequency: JobFrequency = if remaining == onceRemaining {
 				.once
-			} else if remaining == -1 {
+			} else if remaining == foreverRemaining {
 				.forever(.seconds(interval))
 			} else {
 				.times(remaining, .seconds(interval))

@@ -23,7 +23,8 @@ public final class Runner: Sendable {
 				do {
 					try await self.scheduler.schedule(now: Date())
 				} catch {
-					fatalError("Error scheduling \(error)")
+					print("ERROR SCHEDULING: \(error)")
+					try? await Task.sleep(for: .seconds(1))
 				}
 
 				try await Task.sleep(for: .seconds(self.pollInterval))

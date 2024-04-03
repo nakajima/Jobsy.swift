@@ -55,11 +55,6 @@ final class Jobsy_swiftTests: XCTestCase {
 		await TestThing.instance.reset()
 	}
 
-	func testCanConnect() throws {
-		let redis = Redis(connection: .dev())
-		XCTAssert(redis.isConnected, "could not connect, is the local server running?")
-	}
-
 	func testEnqueueAndPerform() async throws {
 		try await reset()
 
@@ -83,15 +78,16 @@ final class Jobsy_swiftTests: XCTestCase {
 
 		let scheduledJob = TestJob(id: "sup", parameters: .init(name: "scheduled job"))
 
-		try await scheduler.push(scheduledJob, performAt: Date().addingTimeInterval(2))
-		try await scheduler.schedule()
+		let date = Date()
+
+		try await scheduler.push(scheduledJob, performAt: date.addingTimeInterval(2))
+		try await scheduler.schedule(now: date)
 
 		let job = try await scheduler.pop()
 
 		XCTAssertNil(job, "popped job before perform at")
 
-		try? await Task.sleep(for: .seconds(2.5))
-		try await scheduler.schedule()
+		try await scheduler.schedule(now: date.addingTimeInterval(2.5))
 
 		let foundJob = try await XCTUnwrapAsync(await scheduler.pop())
 		XCTAssertEqual(foundJob.id, scheduledJob.id)
