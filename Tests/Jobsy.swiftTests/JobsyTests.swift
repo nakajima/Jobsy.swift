@@ -194,10 +194,10 @@ final class Jobsy_swiftTests: XCTestCase {
 		try await scheduler.push(job)
 		try await scheduler.push(scheduledJob, performAt: Date().addingTimeInterval(2))
 
-		let runner = Runner(scheduler: scheduler, pollInterval: 1)
+		let runner = Runner(pollInterval: 1)
 		
 		Task {
-			try await runner.run()
+			try await runner.run(connection: .dev(), for: [TestJob.self])
 		}
 
 		for _ in 0..<4 {
