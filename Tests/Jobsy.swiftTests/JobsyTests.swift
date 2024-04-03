@@ -193,7 +193,7 @@ final class Jobsy_swiftTests: XCTestCase {
 
 		let scheduledStatus = try await scheduler.status(jobID: "scheduled")
 		if case let .scheduled(schedule) = scheduledStatus {
-			XCTAssertEqual(schedule.nextPushAt.formatted(.iso8601), performAt.formatted(.iso8601))
+			XCTAssertEqual(schedule.nextPushAt.description, performAt.description)
 			XCTAssertEqual(schedule.frequency, .once)
 		} else {
 			XCTFail("did not get scheduled: \(scheduledStatus)")
