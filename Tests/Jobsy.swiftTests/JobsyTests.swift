@@ -160,6 +160,35 @@ final class Jobsy_swiftTests: XCTestCase {
 		XCTAssertEqual([job.id], errored.map(\.jobID))
 	}
 
+	func testStatus() async throws {
+		try await reset()
+
+		let normalJob = TestJob(id: "normal", parameters: .init(shouldError: false))
+
+		var status = try await scheduler.status(jobID: "normal")
+		XCTAssertEqual(status, .unknown)
+
+		try await scheduler.push(normalJob)
+
+		status = try await scheduler.status(jobID: "normal")
+		XCTAssertEqual(status, .queued)
+
+		let scheduledJob = TestJob(id: "scheduled", parameters: .init())
+
+		status = try await scheduler.status(jobID: "scheduled")
+		XCTAssertEqual(status, .unknown)
+
+		let performAt = Date().addingTimeInterval(10)
+		try await scheduler.push(scheduledJob, performAt: performAt)
+
+		if case let .scheduled(schedule) = try await scheduler.status(jobID: "scheduled") {
+			XCTAssertEqual(schedule.nextPushAt.formatted(.iso8601), performAt.formatted(.iso8601))
+			XCTAssertEqual(schedule.frequency, .once)
+		} else {
+			XCTFail("did not get scheduled")
+		}
+	}
+
 	func testRunner() async throws {
 		try await reset()
 

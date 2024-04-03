@@ -7,6 +7,6 @@
 
 import Foundation
 
-public enum JobFrequency: Codable, Sendable {
+public enum JobFrequency: Codable, Sendable, Equatable {
 	case once, times(Int, Duration), forever(Duration)
 }

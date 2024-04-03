@@ -94,7 +94,8 @@ public actor JobScheduler {
 				_ = redis.set(keys.remaining(job.id), to: -1)
 				_ = redis.set(keys.interval(job.id), to: duration.components.seconds)
 			default:
-				()
+				_ = redis.set(keys.remaining(job.id), to: 0)
+				_ = redis.set(keys.interval(job.id), to: -1)
 			}
 		}
 	}
@@ -143,10 +144,17 @@ public actor JobScheduler {
 		if let remaining = try await redis.get(keys.remaining(jobID), as: Int.self).get(),
 			 let timestamp = try await redis.zscore(of: jobID, in: keys.scheduled).get(),
 			 let interval = try await redis.get(keys.interval(jobID), as: Int.self).get() {
+			let frequency: JobFrequency = if interval == -1 {
+				.once
+			} else if remaining == -1 {
+				.forever(.seconds(interval))
+			} else {
+				.times(remaining, .seconds(interval))
+			}
+
 			let schedule = JobStatus.Schedule(
 				nextPushAt: Date(timeIntervalSince1970: timestamp),
-				interval: TimeInterval(interval),
-				remaining: remaining == -1 ? nil : remaining
+				frequency: frequency
 			)
 
 			return .scheduled(schedule)

@@ -7,11 +7,17 @@
 
 import Foundation
 
-public enum JobStatus: Sendable {
-	public struct Schedule: Sendable {
+public enum JobStatus: Sendable, Equatable {
+	public struct Schedule: Sendable, Equatable {
 		public var nextPushAt: Date
-		public var interval: TimeInterval
-		public var remaining: Int?
+		public var frequency: JobFrequency
+
+		#if DEBUG
+		public init(nextPushAt: Date, frequency: JobFrequency) {
+			self.nextPushAt = nextPushAt
+			self.frequency = frequency
+		}
+		#endif
 	}
 
 	case unknown, queued, scheduled(Schedule)
