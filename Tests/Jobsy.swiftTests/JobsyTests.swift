@@ -83,6 +83,18 @@ final class Jobsy_swiftTests: XCTestCase {
 		XCTAssertNil(nextJob)
 	}
 
+	func testCancel() async throws {
+		try await reset()
+
+		let testJob = TestJob(id: "sup", parameters: .init(name: "test job"))
+		try await scheduler.push(testJob)
+
+		try await scheduler.cancel(jobID: testJob.id)
+
+		let nextJob = try await scheduler.pop()
+		XCTAssertNil(nextJob)
+	}
+
 	func testCanPerformLater() async throws {
 		try await reset()
 

@@ -147,6 +147,14 @@ public actor JobScheduler {
 		}
 	}
 
+	public func cancel(jobID: String) async throws {
+		try await transaction {
+			_ = redis.delete(keys.all(for: jobID))
+			_ = redis.zrem(jobID, from: keys.scheduled)
+			_ = redis.lrem(jobID, from: keys.scheduled)
+		}
+	}
+
 	public func status(jobID: String) async throws -> JobStatus {
 		guard let _ = try await redis.get(keys.job(jobID), as: Data.self).get() else {
 			return .unknown
