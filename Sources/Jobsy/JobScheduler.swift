@@ -17,11 +17,9 @@ public actor JobScheduler {
 	let encoder = JSONEncoder()
 	let decoder = JSONDecoder()
 	
-	nonisolated(unsafe) public var logger: Logger? {
+	nonisolated(unsafe) public var logger: Logger = Logger(label: "Jobsy") {
 		didSet {
-			if let logger {
-				logger.notice("JobScheduler logger set")
-			}
+			logger.notice("JobScheduler logger set")
 		}
 	}
 
@@ -32,7 +30,7 @@ public actor JobScheduler {
 		case invalidJobKind, noIntervalFound
 	}
 
-	public init(redis: RedisConnection, kinds: [any Job.Type], queue: String = "default", logger: Logger? = nil) {
+	public init(redis: RedisConnection, kinds: [any Job.Type], queue: String = "default", logger: Logger = Logger(label: "Jobsy")) {
 		self.redis = redis
 		self.queue = queue
 		self.logger = logger
@@ -63,12 +61,7 @@ public actor JobScheduler {
 
 	public func perform(_ job: any Job) async {
 		do {
-			if let logger {
-				logger.debug("performing \(job.kind) \(job.parameters)")
-			} else {
-				print("[no logger] performing \(job.kind) \(job.parameters)")
-			}
-
+			logger.debug("performing \(job.kind) \(job.parameters)")
 			try await job.perform()
 		} catch {
 			let erroredJob = ErroredJob(
@@ -128,7 +121,7 @@ public actor JobScheduler {
 		let now = now ?? Date()
 		let jobIDsToSchedule = try await redis.zrangebyscore(from: keys.scheduled, withScores: 0...now.timeIntervalSince1970).get().compactMap(\.string)
 
-		logger?.debug("scheduling \(jobIDsToSchedule.count) jobs [Jobsy]")
+		logger.info("scheduling \(jobIDsToSchedule.count) jobs [Jobsy]")
 
 		if jobIDsToSchedule.isEmpty {
 			return
@@ -166,7 +159,7 @@ public actor JobScheduler {
 	}
 
 	public func cancel(jobID: String) async throws {
-		logger?.debug("canceling \(jobID) jobs [Jobsy]")
+		logger.debug("canceling \(jobID) jobs [Jobsy]")
 		try await transaction {
 			_ = redis.delete(keys.all(for: jobID))
 			_ = redis.zrem(jobID, from: keys.scheduled)

@@ -1,6 +1,7 @@
 import Jobsy
 import XCTest
 import Foundation
+import Logging
 @preconcurrency import RediStack
 
 actor TestThing {
@@ -27,6 +28,7 @@ struct TestJob: Job {
 	var id = UUID().uuidString
 	var frequency: JobFrequency = .once
 	var parameters: Parameters = Parameters()
+	var logger = Logger(label: "TestThing")
 
 	init(id: String, parameters: Parameters) {
 		self.id = id
@@ -34,6 +36,7 @@ struct TestJob: Job {
 	}
 
 	func perform() async throws {
+		print("Performing \(id) \(parameters)")
 		if parameters.shouldError {
 			throw Error.testError
 		} else {
@@ -237,6 +240,7 @@ final class Jobsy_swiftTests: XCTestCase {
 			}
 		}
 
-		XCTFail("did not get to 2")
+		let count = await TestThing.instance.count
+		XCTFail("did not get to 2, got \(count)")
 	}
 }
