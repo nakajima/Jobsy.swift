@@ -63,7 +63,12 @@ public actor JobScheduler {
 
 	public func perform(_ job: any Job) async {
 		do {
-			logger?.debug("performing \(job.kind) \(job.parameters)")
+			if let logger {
+				logger.debug("performing \(job.kind) \(job.parameters)")
+			} else {
+				print("[no logger] performing \(job.kind) \(job.parameters)")
+			}
+
 			try await job.perform()
 		} catch {
 			let erroredJob = ErroredJob(
