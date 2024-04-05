@@ -29,6 +29,8 @@ public final class Runner: Sendable {
 
 				try await Task.sleep(for: .seconds(self.pollInterval))
 			}
+
+			fatalError("scheduling poller fell through")
 		}
 
 		while true {
@@ -41,5 +43,7 @@ public final class Runner: Sendable {
 				try? await Task.sleep(for: .seconds(1))
 			}
 		}
+
+		fatalError("scheduling bpop fell through")
 	}
 }
