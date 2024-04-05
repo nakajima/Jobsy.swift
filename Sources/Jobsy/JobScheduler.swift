@@ -16,7 +16,8 @@ public actor JobScheduler {
 
 	let encoder = JSONEncoder()
 	let decoder = JSONDecoder()
-	let logger: Logger?
+	
+	nonisolated(unsafe) public var logger: Logger?
 
 	nonisolated public static let onceRemaining = -2
 	nonisolated public static let foreverRemaining = -1
