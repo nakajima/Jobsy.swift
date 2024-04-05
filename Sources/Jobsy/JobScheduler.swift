@@ -56,6 +56,8 @@ public actor JobScheduler {
 
 	public func perform(_ job: any Job) async {
 		do {
+			var job = job
+			job.logger = self.logger
 			try await job.perform()
 		} catch {
 			let erroredJob = ErroredJob(
