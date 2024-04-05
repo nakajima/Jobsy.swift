@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Logging
 @preconcurrency import RediStack
 
 public actor JobScheduler {
@@ -15,6 +16,7 @@ public actor JobScheduler {
 
 	let encoder = JSONEncoder()
 	let decoder = JSONDecoder()
+	let logger: Logger?
 
 	nonisolated public static let onceRemaining = -2
 	nonisolated public static let foreverRemaining = -1
@@ -23,9 +25,10 @@ public actor JobScheduler {
 		case invalidJobKind, noIntervalFound
 	}
 
-	public init(redis: RedisConnection, kinds: [any Job.Type], queue: String = "default") {
+	public init(redis: RedisConnection, kinds: [any Job.Type], queue: String = "default", logger: Logger? = nil) {
 		self.redis = redis
 		self.queue = queue
+		self.logger = logger
 		self.kindMap = kinds.reduce(into: [:]) { result, kind in
 			result[String(describing: kind)] = kind
 		}
@@ -112,6 +115,8 @@ public actor JobScheduler {
 		let now = now ?? Date()
 		let jobIDsToSchedule = try await redis.zrangebyscore(from: keys.scheduled, withScores: 0...now.timeIntervalSince1970).get().compactMap(\.string)
 
+		logger?.debug("scheduling \(jobIDsToSchedule.count) jobs [Jobsy]")
+
 		if jobIDsToSchedule.isEmpty {
 			return
 		}
@@ -148,6 +153,7 @@ public actor JobScheduler {
 	}
 
 	public func cancel(jobID: String) async throws {
+		logger?.debug("canceling \(jobID) jobs [Jobsy]")
 		try await transaction {
 			_ = redis.delete(keys.all(for: jobID))
 			_ = redis.zrem(jobID, from: keys.scheduled)

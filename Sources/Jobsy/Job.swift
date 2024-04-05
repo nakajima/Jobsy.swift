@@ -7,12 +7,14 @@
 
 import Foundation
 import RediStack
+import Logging
 
 public protocol Job: Codable, Sendable {
 	associatedtype Parameters: Codable
 
 	var id: String { get }
 	var parameters: Parameters { get }
+	var logger: Logger? { get set }
 
 	init(id: String, parameters: Parameters)
 
@@ -21,4 +23,8 @@ public protocol Job: Codable, Sendable {
 
 public extension Job {
 	var kind: String { String(describing: Self.self) }
+	var logger: Logger? {
+		set { }
+		get { nil }
+	}
 }

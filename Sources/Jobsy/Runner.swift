@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Logging
 @preconcurrency import RediStack
 
 public final class Runner: Sendable {
@@ -15,8 +16,8 @@ public final class Runner: Sendable {
 		self.pollInterval = pollInterval
 	}
 
-	public func run(connection: @autoclosure () -> RedisConnection, for kinds: [any Job.Type]) async {
-		let scheduler = JobScheduler(redis: connection(), kinds: kinds)
+	public func run(connection: @autoclosure () -> RedisConnection, for kinds: [any Job.Type], logger: Logger? = nil) async {
+		let scheduler = JobScheduler(redis: connection(), kinds: kinds, logger: logger)
 
 		Task {
 			while true {
