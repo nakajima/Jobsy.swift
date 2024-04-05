@@ -121,11 +121,11 @@ public actor JobScheduler {
 		let now = now ?? Date()
 		let jobIDsToSchedule = try await redis.zrangebyscore(from: keys.scheduled, withScores: 0...now.timeIntervalSince1970).get().compactMap(\.string)
 
-		logger.info("scheduling \(jobIDsToSchedule.count) jobs [Jobsy]")
-
 		if jobIDsToSchedule.isEmpty {
 			return
 		}
+
+		logger.info("scheduling \(jobIDsToSchedule.count) jobs [Jobsy]")
 
 		try await transaction {
 			_ = redis.zrem(jobIDsToSchedule, from: keys.scheduled)
