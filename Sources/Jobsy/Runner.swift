@@ -16,13 +16,13 @@ public final class Runner: Sendable {
 		self.pollInterval = pollInterval
 	}
 
-	public func run(connection: @autoclosure () -> RedisConnection, for kinds: [any Job.Type], logger: Logger = Logger(label: "Jobsy")) async {
-		let scheduler = JobScheduler(redis: connection(), kinds: kinds, logger: logger)
+	public func run(connection: @autoclosure () -> RedisConnection, for kinds: [any Job.Type], queue: String = "default", logger: Logger = Logger(label: "Jobsy")) async {
+		let scheduler = JobScheduler(redis: connection(), kinds: kinds, queue: queue, logger: logger)
 
 		Task.detached {
 			while true {
 				do {
-					try await scheduler.schedule()
+					try await scheduler.schedule(now: Date())
 				} catch {
 					print("ERROR SCHEDULING: \(error)")
 					try? await Task.sleep(for: .seconds(1))
